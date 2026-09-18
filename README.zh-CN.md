@@ -8,6 +8,7 @@
 |---|---|---|
 | [`workbuddy/`](workbuddy/) | **WorkBuddy** | 即插即用的 `mcp.json`，令牌明文落盘（那边不支持环境变量，别无选择） |
 | [`dsh/`](dsh/) | **DeepSeek Harness (dsh)** | **必须打一个补丁**——不打会静默失败，见下 |
+| [`skill/`](skill/) | **任何 agent** | 即装即用的 `SKILL.md`：让 agent 在碰到 403 时**找你补权限**，而不是瞎猜乱试 |
 
 两端暴露同样的 3 个工具：`docs`（文档检索）、`search`（OpenAPI spec 搜索）、`execute`（JS 沙箱执行器）。
 
@@ -24,15 +25,29 @@
 
 ## 令牌准备
 
-1. 到 https://dash.cloudflare.com/profile/api-tokens 「创建自定义令牌」
-2. 起步只读（账户设置 Read + 区域 Read），要动 DNS/Workers 再加 Edit
-3. 区域资源限制到具体域名，TTL 别选无期限
-4. **客户端 IP 筛选留空**——走代理/VPN 时填了固定 IP，之后会莫名 401
+### 获取令牌 —— 账户 API 令牌（推荐，实测通路）
 
-各端令牌处理：
+1. 打开 Cloudflare 控制台 → 右上角切到目标账户 →「**管理账户**」→「**账户 API 令牌**」→「创建令牌」。
+2. 直接点**权限模板**，别一格一格跟权限下拉搏斗——那个下拉里的权限名全是英文原文、还是前缀匹配，很容易选错：
+   - **「Write all resources」**——全账户可写。个人开发者测试账户无所谓，生产账户别这么干。
+   - **「Edit zone DNS」**——只管解析记录。
+   - **「Edit Cloudflare Workers」**——Workers / KV / R2。
+3. 令牌名称改成认得出的（比如 `workbuddy-mcp`），**TTL** 给个期限（别选「无期限」——过期了重建只要一分钟，泄漏一个永不过期的令牌是事故）。
+4. **客户端 IP 地址筛选留空**。走代理/VPN 时出口 IP 会变，固定 IP 过几周会莫名其妙 401。
+5. 创建 → 复制令牌（**只显示一次**，`cfat_` 前缀）。
+
+### 补充权限 —— 用户 API 令牌（最小权限路线）
+
+不想给账户级令牌的话，改用**用户 API 令牌**：控制台 →「我的个人资料」→「API 令牌」→「创建自定义令牌」，按需逐行加权限（起步只读：账户设置 Read + 区域 Read；之后要加 Edit 直接**编辑同一个令牌**——编辑**不换密钥**，改完立即生效）。端点两种令牌都认，区别只在权限范围。
+
+### 各端令牌处理
 
 - **WorkBuddy**：`mcp.json` 的 `headers` 里**明文**写（用户级配置不支持环境变量占位符）。泄露了随时去控制台吊销换新。
 - **dsh**：`cordis.patch.yml` 用 `!!js` 标签从环境变量 `CLOUDFLARE_API_TOKEN` 读取，**令牌不落盘**。启动 dsh 前设好环境变量。
+
+### 让 agent 自己处理权限缺口
+
+把 [`skill/SKILL.md`](skill/) 装进客户端（复制到 `~/.workbuddy/skills/cloudflare-token-permission/` 或 `~/.dsh/skills/`）。它给 agent 钉死一条规矩：**碰到 403 / 权限不足，不许瞎猜、不许盲目重试、不许绕路——找用户加权限**，加完用只读的权限回显（`GET /zones` 会返回每个 zone 的权限清单）验证是否生效。
 
 > `mcp.cloudflare.com/mcp` 端点强制 OAuth，但两端的 MCP 连接器都走静态 Bearer Token——官方文档明确用户令牌和账户令牌都支持，这是可行的一等路径。
 

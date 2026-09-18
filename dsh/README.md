@@ -85,11 +85,17 @@ node apply-schema-fix.mjs
 
 ## 获取 API Token
 
-1. 打开 https://dash.cloudflare.com/profile/api-tokens
-2. 「创建令牌」→「创建自定义令牌」
-3. 权限按需勾选（起步建议只读：账户设置 Read + 区域 Read；要动 DNS/Workers 再加 Edit）
-4. 区域资源建议限制到特定域名，TTL 别选无期限
-5. **客户端 IP 筛选留空**（走代理/VPN 的话填了会莫名 401）
+**主路径 —— 账户 API 令牌**（实测通路）：
+
+1. Cloudflare 控制台 →「管理账户」→「账户 API 令牌」→「创建令牌」
+2. 直接点**权限模板**（`Write all resources` / `Edit zone DNS` / `Edit Cloudflare Workers`），别一格一格选——权限名全是英文原文且前缀匹配，很容易选错
+3. 令牌改名成认得出的（如 `workbuddy-mcp`），TTL 给个期限，别选无期限
+4. **客户端 IP 筛选留空**（走代理/VPN 的话填了会莫名 401）
+5. 创建后令牌只显示一次，设进环境变量（见上）
+
+**补充权限 —— 用户 API 令牌**（最小权限路线）：控制台 →「我的个人资料」→「API 令牌」→「创建自定义令牌」，按需逐行加；后续加权限直接编辑同一令牌（不换密钥，立即生效）。端点两种令牌都认。
+
+> 配套给 agent 装上 [`../skill/`](../skill/) 里的 SKILL.md，agent 碰到 403 会来找你要权限而不是瞎试。
 
 > dsh 支持 `!!js` 从环境变量读令牌，所以**不像 WorkBuddy 那样需要明文落盘**。
 > 但环境变量本身仍是明文，别把它提交进 git。
