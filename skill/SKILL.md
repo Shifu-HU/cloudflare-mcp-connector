@@ -1,6 +1,6 @@
 ---
 name: cloudflare-token-permission
-description: Cloudflare MCP 权限守门规则。当 Cloudflare API/MCP 调用返回 403 或权限不足时，agent 必须停下来找用户补权限，禁止瞎猜、禁止盲目重试、禁止绕路。含权限回显验证法（只读无副作用）、控制台操作指引（中英文界面差异）、破坏性操作确认红线。触发词：Cloudflare 403、insufficient permission、权限不足、无法访问某 CF 资源、令牌权限。
+description: Cloudflare MCP 权限守门规则（WorkBuddy / dsh 双端通用）。当 Cloudflare API/MCP 调用返回 403 或权限不足，或需要令牌尚未授予的权限才能完成用户要求时使用。规则要求 agent 停下来找用户补权限，禁止瞎猜、禁止盲目重试、禁止绕路。含权限回显验证法（只读无副作用）、控制台操作指引（中英文界面差异）、工具不可见 ≠ 权限问题的分诊表、破坏性操作确认红线。触发词：Cloudflare 403、insufficient permission、权限不足、无法访问某 CF 资源、令牌权限、需要 CF 权限。
 ---
 
 # Cloudflare 令牌权限守门
@@ -9,7 +9,9 @@ description: Cloudflare MCP 权限守门规则。当 Cloudflare API/MCP 调用�
 
 1. **令牌权限是用户有意设定的安全边界，不是障碍。** 用户的 Cloudflare 账户（域名、DNS、Workers）动不得，权限没有就不做。
 2. 调用返回 **403 / insufficient permissions / authentication error（且令牌 verify 为 active）** → 这是权限不足。**唯一正确动作：向用户申请补权限**，说清楚三件事——要哪个权限组（英文名）、为什么需要、加在哪个令牌上。
+   - dsh 侧可以直接用 `ask_user_question` 工具把这三件事问出来。
 3. **禁止**：反复重试碰运气、用公开/未认证接口绕过、自作主张建议用户直接上「Write all resources」（除非用户自己提出）、伪造或降低操作范围蒙混过关。
+4. **禁止把「没权限」当成「技术上做不到」就悄悄放弃**——必须明确告诉用户缺哪个权限、卡在哪一步。
 
 ## 第一步：确认是「权限问题」还是「令牌问题」
 
@@ -64,8 +66,27 @@ Authorization: Bearer <令牌>
 
 用户说加完了 → 重打第二步的 `/zones` 回显，确认目标 `#xxx:edit` 出现，再继续干活。
 
+## dsh 专属：工具命名与「看不见 ≠ 没权限」
+
+三个工具在两端叫法不同，别混：
+
+| 客户端 | 工具形态 |
+|---|---|
+| WorkBuddy | `cloudflare-api` 连接器 → `docs` / `search` / `execute` |
+| dsh | MCP 工具名 `mcp__cloudflare__docs` / `__search` / `__execute` |
+
+**在 dsh 里，如果问「你有哪些工具」看不到 `mcp__cloudflare__*` —— 这大概率不是权限问题，别套用本技能。** 先按接入问题查这两点：
+
+1. **插件补丁还在不在**：`dsh-mcp-client/lib/index.js` 里应能搜到 `sanitizeSchema`。
+   升级 dsh-mcp-client 会**覆盖掉**这个补丁，故障原样复发。
+2. **改过配置后有没有重启 dsh**：配置和补丁都是启动时加载的。
+
+确认是接入问题的话，让用户跑 `apply-schema-fix.mjs` 并重启，而不是去控制台加权限（加了也没用）。
+
 ## 红线
 
-- **破坏性写操作**（删 DNS 记录、删 Worker、改 SSL/Zone Settings）即使权限够，也要先列出目标资源向用户确认再动手。
+- **破坏性写操作**（删 DNS 记录、删 Worker、改 SSL/Zone Settings、清空 R2）即使权限够，也要先列出目标资源向用户确认再动手。dsh 侧用 `ask_user_question` 确认。
 - 权限与令牌的任何变更**由用户在控制台亲手完成**，agent 只提供指引和验证，不碰凭据本身。
-- 令牌轮换/吊销后：WorkBuddy 侧 `~/.workbuddy/mcp.json` 与 dsh 侧环境变量 `CLOUDFLARE_API_TOKEN` 都要同步换（两处独立存放）。
+- 令牌轮换/吊销后，两处**独立存放**的配置都要同步换：
+  - WorkBuddy：`~/.workbuddy/mcp.json` 的 `headers`
+  - dsh：`~/.dsh/profiles/*/cordis.patch.yml` 的 `Authorization`（或环境变量 `CLOUDFLARE_API_TOKEN`）
