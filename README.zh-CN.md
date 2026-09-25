@@ -2,56 +2,46 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-接入 **Cloudflare 官方 API MCP**（Code Mode，`https://mcp.cloudflare.com/mcp`）的两套实测可用配置：
+接入 **Cloudflare 官方 API MCP**（Code Mode，`https://mcp.cloudflare.com/mcp`）的即用配置。接入后 agent 获得同样 3 个工具：`docs`（文档检索）、`search`（OpenAPI spec 搜索）、`execute`（JS 沙箱执行器）。
 
-| 目录 | 客户端 | 说明 |
+| 目录 | 客户端 | 内容 |
 |---|---|---|
-| [`workbuddy/`](workbuddy/) | **WorkBuddy** | 即插即用的 `mcp.json`，令牌明文落盘（那边不支持环境变量，别无选择） |
-| [`dsh/`](dsh/) | **DeepSeek Harness (dsh)** | **必须打一个补丁**——不打会静默失败，见下 |
-| [`skill/`](skill/) | **任何 agent** | 即装即用的 `SKILL.md`：让 agent 在碰到 403 时**找你补权限**，而不是瞎猜乱试 |
+| [`workbuddy/`](workbuddy/) | **WorkBuddy** | `mcp.json` —— 复制、贴令牌、完成 |
+| [`dsh/`](dsh/) | **DeepSeek Harness (dsh)** | 配置 **外加一个必打补丁**——跳过下面第 2 步，工具会静默注册失败 |
+| [`skill/`](skill/) | **任何 agent** | `SKILL.md` —— 让 agent 碰到 403 时找你补权限，而不是瞎猜乱试 |
 
-两端暴露同样的 3 个工具：`docs`（文档检索）、`search`（OpenAPI spec 搜索）、`execute`（JS 沙箱执行器）。
+## 第 1 步 —— 获取 API 令牌
 
-## dsh 的静默失败坑（重点）
-
-不打补丁时，dsh 表现为 **「MCP 连接成功但 0 个工具注册」**，且**不报错**。真因链条：
-
-1. Cloudflare 返回的 tool `inputSchema` 带 `"$schema": "https://json-schema.org/draft/2020-12/schema"`。
-2. `dsh-mcp-client` 把 schema **原样**交给 `ctx.tools.register`。
-3. dsh 的 `assertSupportedJsonSchema` 只白名单 `type/oneOf/properties/required/additionalProperties/items/enum/const`，**`$schema` 不受支持** → 抛 `JsonSchemaError`。
-4. 异常被 `registrationFailure: "contain"` **静默吞掉**，日志只剩一行 error。
-
-**修法**：运行 [`dsh/apply-schema-fix.mjs`](dsh/apply-schema-fix.mjs)，注册前剥离不受支持的 schema 关键字（幂等，先备份）。详见 [`dsh/README.md`](dsh/README.md)。
-
-## 令牌准备
-
-### 获取令牌 —— 账户 API 令牌（推荐，实测通路）
-
-1. 打开 Cloudflare 控制台 → 右上角切到目标账户 →「**管理账户**」→「**账户 API 令牌**」→「创建令牌」。
-2. 直接点**权限模板**，别一格一格跟权限下拉搏斗——那个下拉里的权限名全是英文原文、还是前缀匹配，很容易选错：
-   - **「Write all resources」**——全账户可写。个人开发者测试账户无所谓，生产账户别这么干。
-   - **「Edit zone DNS」**——只管解析记录。
-   - **「Edit Cloudflare Workers」**——Workers / KV / R2。
-3. 令牌名称改成认得出的（比如 `workbuddy-mcp`），**TTL** 给个期限（别选「无期限」——过期了重建只要一分钟，泄漏一个永不过期的令牌是事故）。
-4. **客户端 IP 地址筛选留空**。走代理/VPN 时出口 IP 会变，固定 IP 过几周会莫名其妙 401。
+1. 打开 Cloudflare 控制台 → 右上角切到目标账户 →「**管理账户**」→「**账户 API 令牌**」→「创建令牌」；
+2. 直接点**权限模板**，别一格一格跟权限下拉搏斗（权限名全是英文原文、还是前缀匹配，很容易选错）：
+   - **「Write all resources」**——全账户可写。个人开发者测试账户无所谓，生产账户别这么干；
+   - **「Edit zone DNS」**——只管解析记录；
+   - **「Edit Cloudflare Workers」**——Workers / KV / R2；
+3. 令牌名称改成认得出的（比如 `workbuddy-mcp`），**TTL 给个期限**——别选「无期限」：过期了重建只要一分钟，泄漏一个永不过期的令牌是事故；
+4. **客户端 IP 地址筛选留空**——走代理/VPN 时出口 IP 会变，固定 IP 过几周会莫名其妙 401；
 5. 创建 → 复制令牌（**只显示一次**，`cfat_` 前缀）。
 
-### 补充权限 —— 用户 API 令牌（最小权限路线）
+最小权限路线：改用**用户 API 令牌**（控制台 →「我的个人资料」→「API 令牌」→「创建自定义令牌」）。按需逐行加权限（起步只读：账户设置 Read + 区域 Read），之后要加直接**编辑同一个令牌**——编辑**不换密钥**，改完立即生效。端点两种令牌都认，区别只在权限范围。
 
-不想给账户级令牌的话，改用**用户 API 令牌**：控制台 →「我的个人资料」→「API 令牌」→「创建自定义令牌」，按需逐行加权限（起步只读：账户设置 Read + 区域 Read；之后要加 Edit 直接**编辑同一个令牌**——编辑**不换密钥**，改完立即生效）。端点两种令牌都认，区别只在权限范围。
+## 第 2 步 —— 接入你的客户端
 
-### 各端令牌处理
+### WorkBuddy
 
-- **WorkBuddy**：`mcp.json` 的 `headers` 里**明文**写（用户级配置不支持环境变量占位符）。泄露了随时去控制台吊销换新。
-- **dsh**：`cordis.patch.yml` 用 `!!js` 标签从环境变量 `CLOUDFLARE_API_TOKEN` 读取，**令牌不落盘**。启动 dsh 前设好环境变量。
+1. 把 `workbuddy/mcp.json` 复制进 WorkBuddy 用户级配置（细节见 [`workbuddy/README.md`](workbuddy/README.md)）；
+2. 把令牌贴进 `Authorization: Bearer` 请求头——那边只支持明文（用户级配置没有环境变量占位符）；泄漏了随时去控制台吊销换新；
+3. 重启并信任新的 MCP 服务器。
 
-### 让 agent 自己处理权限缺口
+### dsh
 
-把 [`skill/SKILL.md`](skill/) 装进客户端（复制到 `~/.workbuddy/skills/cloudflare-token-permission/` 或 `~/.dsh/skills/`）。它给 agent 钉死一条规矩：**碰到 403 / 权限不足，不许瞎猜、不许盲目重试、不许绕路——找用户加权限**，加完用只读的权限回显（`GET /zones` 会返回每个 zone 的权限清单）验证是否生效。
+1. **启动 dsh 前**设好环境变量：`CLOUDFLARE_API_TOKEN`（由 `dsh/cordis.patch.yml` 里的 `!!js` 标签读取，**令牌不落盘**）；
+2. **打一次补丁**：`node dsh/apply-schema-fix.mjs`。不打的话，dsh 显示「MCP 连接成功」但**注册 0 个工具且不报任何错**（真因见 [`dsh/README.md`](dsh/README.md)）。补丁在注册前剥掉 dsh 不支持的一个 JSON-Schema 关键字；幂等，先备份；
+3. 重启 dsh。
 
-> `mcp.cloudflare.com/mcp` 端点强制 OAuth，但两端的 MCP 连接器都走静态 Bearer Token——官方文档明确用户令牌和账户令牌都支持，这是可行的一等路径。
+### 其他 agent
 
-## 验证连通
+把 [`skill/SKILL.md`](skill/SKILL.md) 放进客户端技能目录（`~/.workbuddy/skills/cloudflare-token-permission/` 或 `~/.dsh/skills/`）。它给 agent 钉死一条规矩：碰到 403 / 权限不足，不许瞎猜、不许盲目重试、不许绕路——**找用户加权限**，加完用只读回显验证（`GET /zones` 会返回每个 zone 的权限清单）。
+
+## 第 3 步 —— 验证连通
 
 不启动客户端直接测（在客户端自己的 `node_modules` 里跑）：
 
@@ -67,6 +57,17 @@ await c.connect(t);
 console.log((await c.listTools()).tools.map(x => x.name)); // ["docs","search","execute"]
 await c.close();
 ```
+
+## 常见问题
+
+| 现象 | 原因 / 处理 |
+|---|---|
+| dsh：「MCP 连接成功」、0 个工具、不报错 | Cloudflare 的 `inputSchema` 带 `$schema`，dsh 的白名单不认——异常被静默吞掉。跑 `dsh/apply-schema-fix.mjs` 后重启 |
+| 用了几周后 401 | 建令牌时在走代理/VPN 的情况下固定了 IP——重建一个 IP 筛选留空的令牌 |
+| 403 权限不足 | 编辑令牌补上缺的权限行（编辑不换密钥），或装 `skill/SKILL.md` 让 agent 来找你 |
+| 令牌泄漏 | 控制台吊销，新建一个，重新贴进客户端 |
+
+> `mcp.cloudflare.com/mcp` 端点强制 OAuth，但两端的 MCP 连接器都走静态 Bearer Token——官方文档明确用户令牌和账户令牌都支持，这是可行的一等路径。
 
 ## 许可
 
