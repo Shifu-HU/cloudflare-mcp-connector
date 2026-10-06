@@ -8,12 +8,12 @@ Ready-to-use configs for connecting the **Cloudflare official API MCP** (Code Mo
 |---|---|---|
 | [`workbuddy/`](workbuddy/) | **WorkBuddy** | `mcp.json` — copy, paste your token, done |
 | [`dsh/`](dsh/) | **DeepSeek Harness (dsh)** | Config **plus a required patch** — skip step 2 below and tools silently fail to register |
-| [`skill/`](skill/) | **Any agent** | `SKILL.md` — teaches the agent to ask you for permissions on 403 instead of guessing |
+| [`skill/`](skill/) | **Any agent** | `SKILL.md` — teaches the agent to request missing permissions on 403 instead of guessing |
 
 ## Step 1 — Get an API token
 
 1. Open the Cloudflare dashboard → top-right account switch → **Manage Account** → **Account API Tokens** → **Create Token**;
-2. Pick a **template** instead of fighting the permission dropdowns (they are English-only and prefix-matched, easy to get wrong):
+2. Pick a **permission template** instead of picking rows one by one from the English, prefix-matched dropdowns (easy to get wrong):
    - **"Write all resources"** — full account write. Fine for a personal dev account; don't use this on a production one;
    - **"Edit zone DNS"** — DNS records only;
    - **"Edit Cloudflare Workers"** — Workers / KV / R2;
@@ -64,7 +64,7 @@ await c.close();
 |---|---|
 | dsh: "MCP connected", 0 tools, no error | Cloudflare's `inputSchema` carries `$schema`, which dsh's whitelist rejects — the failure is silently swallowed. Run `dsh/apply-schema-fix.mjs` and restart |
 | 401 weeks after setup | Client IP filtering was pinned while behind a VPN/proxy — recreate the token with IP filtering left empty |
-| 403 insufficient permission | Edit the token and add the missing permission row (editing doesn't rotate the secret), or install `skill/SKILL.md` so the agent asks you |
+| 403 insufficient permission | Edit the token and add the missing permission row (editing doesn't rotate the secret), or install `skill/SKILL.md` so the agent requests the missing permission from the user |
 | Token leaked | Revoke it from the dashboard, create a new one, paste into the client |
 
 > The `mcp.cloudflare.com/mcp` endpoint enforces OAuth, but both clients' MCP connectors use static Bearer tokens instead — that's the supported workaround, and the official docs confirm both user tokens and account tokens work.

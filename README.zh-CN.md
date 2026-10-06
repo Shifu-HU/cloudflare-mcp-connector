@@ -8,12 +8,12 @@
 |---|---|---|
 | [`workbuddy/`](workbuddy/) | **WorkBuddy** | `mcp.json` —— 复制、贴令牌、完成 |
 | [`dsh/`](dsh/) | **DeepSeek Harness (dsh)** | 配置 **外加一个必打补丁**——跳过下面第 2 步，工具会静默注册失败 |
-| [`skill/`](skill/) | **任何 agent** | `SKILL.md` —— 让 agent 碰到 403 时找你补权限，而不是瞎猜乱试 |
+| [`skill/`](skill/) | **任何 agent** | `SKILL.md` —— 让 agent 碰到 403 时向用户申请补权限，而不是瞎猜乱试 |
 
 ## 第 1 步 —— 获取 API 令牌
 
 1. 打开 Cloudflare 控制台 → 右上角切到目标账户 →「**管理账户**」→「**账户 API 令牌**」→「创建令牌」；
-2. 直接点**权限模板**，别一格一格跟权限下拉搏斗（权限名全是英文原文、还是前缀匹配，很容易选错）：
+2. 直接选**权限模板**，不必在英文原文、前缀匹配的权限下拉里逐项挑选（很容易选错）：
    - **「Write all resources」**——全账户可写。个人开发者测试账户无所谓，生产账户别这么干；
    - **「Edit zone DNS」**——只管解析记录；
    - **「Edit Cloudflare Workers」**——Workers / KV / R2；
@@ -64,7 +64,7 @@ await c.close();
 |---|---|
 | dsh：「MCP 连接成功」、0 个工具、不报错 | Cloudflare 的 `inputSchema` 带 `$schema`，dsh 的白名单不认——异常被静默吞掉。跑 `dsh/apply-schema-fix.mjs` 后重启 |
 | 用了几周后 401 | 建令牌时在走代理/VPN 的情况下固定了 IP——重建一个 IP 筛选留空的令牌 |
-| 403 权限不足 | 编辑令牌补上缺的权限行（编辑不换密钥），或装 `skill/SKILL.md` 让 agent 来找你 |
+| 403 权限不足 | 编辑令牌补上缺的权限行（编辑不换密钥），或装 `skill/SKILL.md` 让 agent 向用户申请补权限 |
 | 令牌泄漏 | 控制台吊销，新建一个，重新贴进客户端 |
 
 > `mcp.cloudflare.com/mcp` 端点强制 OAuth，但两端的 MCP 连接器都走静态 Bearer Token——官方文档明确用户令牌和账户令牌都支持，这是可行的一等路径。
