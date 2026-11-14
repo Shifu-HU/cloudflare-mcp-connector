@@ -42,15 +42,33 @@ Published on npm: **[@shifu-hu/dsh-cloudflare-mcp](https://www.npmjs.com/package
 plugin_manager install_bundle @shifu-hu/dsh-cloudflare-mcp
 ```
 
+One install gives you all three pieces:
+
+| What | How |
+|---|---|
+| MCP connection | the bundle's patch inserts the `mcp-cloudflare` row |
+| Tool-registration fix | applied automatically on load (rewrites one call site in `dsh-mcp-client`, backing it up first) |
+| Permission skill | written to `~/.dsh/skills/cloudflare-token-permission/SKILL.md` |
+
 1. Set the environment variable **before launching dsh**: `CLOUDFLARE_API_TOKEN` (read via a `!!js` tag — **no secret on disk**);
-2. **Restart dsh.** The plugin applies the schema patch automatically on load, so the three tools register. Without that patch, dsh would show "MCP connected" but register **zero tools, with no visible error** (root cause in [`dsh/README.md`](dsh/README.md));
-3. If you later upgrade `@deepseek-ai/dsh-mcp-client`, the patch is overwritten — it is re-applied the next time the plugin loads, or run it by hand:
+2. **Restart dsh.** The three tools appear once the patch runs;
+3. If you later upgrade `@deepseek-ai/dsh-mcp-client`, its file is replaced — the patch is re-applied on the next plugin load, or run it by hand:
 
 ```bash
 node node_modules/@shifu-hu/dsh-cloudflare-mcp/apply-schema-fix.mjs
 ```
 
-> The patch rewrites one call site inside `dsh-mcp-client` (backing up to `index.js.bak-schema-fix` first). It strips a JSON-Schema keyword (`$schema`) the harness rejects, is idempotent, and affects every MCP server you connect, not just Cloudflare.
+Both automatic steps can be turned off in the bundle config:
+
+```yaml
+- id: mcp-cloudflare
+  name: '@shifu-hu/dsh-cloudflare-mcp'
+  config:
+    patchClient: false    # don't touch dsh-mcp-client
+    installSkill: false   # don't write the skill file
+```
+
+> **This plugin modifies another package.** It rewrites one `inputSchema:` call site inside `@deepseek-ai/dsh-mcp-client` to strip a JSON-Schema keyword (`$schema`) the harness rejects, saving `index.js.bak-schema-fix` first. It is idempotent, and it helps every MCP server you connect, not just Cloudflare — but you should know it touches a file outside its own package.
 
 ### Any other agent
 

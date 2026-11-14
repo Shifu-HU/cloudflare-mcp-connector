@@ -42,15 +42,33 @@
 plugin_manager install_bundle @shifu-hu/dsh-cloudflare-mcp
 ```
 
+一次安装同时装好三样：
+
+| 内容 | 方式 |
+|---|---|
+| MCP 连接 | bundle 的 patch 插入 `mcp-cloudflare` 条目 |
+| 工具注册修复 | 加载时自动执行（改写 `dsh-mcp-client` 的一个调用点，先备份） |
+| 权限 skill | 写入 `~/.dsh/skills/cloudflare-token-permission/SKILL.md` |
+
 1. **启动 dsh 前**设好环境变量：`CLOUDFLARE_API_TOKEN`（由 `!!js` 标签读取，**令牌不落盘**）；
-2. **重启 dsh**。插件加载时会自动打 schema 补丁，三个工具即可注册。不打补丁的话，dsh 会显示「MCP 连接成功」但**注册 0 个工具且不报任何错**（真因见 [`dsh/README.md`](dsh/README.md)）；
-3. 若之后升级了 `@deepseek-ai/dsh-mcp-client`，补丁会被覆盖——插件下次加载会自动重打，也可手动执行：
+2. **重启 dsh**，补丁执行后三个工具即出现；
+3. 若之后升级了 `@deepseek-ai/dsh-mcp-client`，其文件会被覆盖——插件下次加载会自动重打，也可手动执行：
 
 ```bash
 node node_modules/@shifu-hu/dsh-cloudflare-mcp/apply-schema-fix.mjs
 ```
 
-> 补丁只改写 `dsh-mcp-client` 里的一个调用点（改写前备份为 `index.js.bak-schema-fix`），剥离 harness 不接受的 JSON-Schema 关键字（`$schema`）。幂等，且对你接的**所有** MCP server 都生效，不只 Cloudflare。
+两步自动行为都可以在 bundle 配置里关掉：
+
+```yaml
+- id: mcp-cloudflare
+  name: '@shifu-hu/dsh-cloudflare-mcp'
+  config:
+    patchClient: false    # 不改 dsh-mcp-client
+    installSkill: false   # 不写 skill 文件
+```
+
+> **本插件会修改另一个包。** 它改写 `@deepseek-ai/dsh-mcp-client` 里的一处 `inputSchema:` 调用，剥离 harness 不接受的 JSON-Schema 关键字（`$schema`），改写前备份为 `index.js.bak-schema-fix`。幂等，且对你接的**所有** MCP server 都有帮助——但它确实动了自身包外的文件，你需要知情。
 
 ### 其他 agent
 
