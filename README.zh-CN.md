@@ -4,7 +4,7 @@
 
 接入 **Cloudflare 官方 API MCP**（Code Mode，`https://mcp.cloudflare.com/mcp`）的即用配置。接入后 agent 获得同样 3 个工具：`docs`（文档检索）、`search`（OpenAPI spec 搜索）、`execute`（JS 沙箱执行器）。
 
-[![npm](https://img.shields.io/npm/v/@shifu-hu/dsh-cloudflare-mcp.svg)](https://www.npmjs.com/package/@shifu-hu/dsh-cloudflare-mcp)
+[![npm](https://img.shields.io/npm/v/dsh-cf-mcp.svg)](https://www.npmjs.com/package/dsh-cf-mcp)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 | 目录 | 客户端 | 内容 |
@@ -36,10 +36,10 @@
 
 ### dsh
 
-已发布到 npm：**[@shifu-hu/dsh-cloudflare-mcp](https://www.npmjs.com/package/@shifu-hu/dsh-cloudflare-mcp)**
+已发布到 npm：**[dsh-cf-mcp](https://www.npmjs.com/package/dsh-cf-mcp)**
 
 ```bash
-plugin_manager install_bundle @shifu-hu/dsh-cloudflare-mcp
+plugin_manager install_bundle dsh-cf-mcp
 ```
 
 一次安装同时装好三样：
@@ -55,14 +55,14 @@ plugin_manager install_bundle @shifu-hu/dsh-cloudflare-mcp
 3. 若之后升级了 `@deepseek-ai/dsh-mcp-client`，其文件会被覆盖——插件下次加载会自动重打，也可手动执行：
 
 ```bash
-node node_modules/@shifu-hu/dsh-cloudflare-mcp/apply-schema-fix.mjs
+node node_modules/dsh-cf-mcp/apply-schema-fix.mjs
 ```
 
 两步自动行为都可以在 bundle 配置里关掉：
 
 ```yaml
 - id: mcp-cloudflare
-  name: '@shifu-hu/dsh-cloudflare-mcp'
+  name: 'dsh-cf-mcp'
   config:
     patchClient: false    # 不改 dsh-mcp-client
     installSkill: false   # 不写 skill 文件

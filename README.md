@@ -2,7 +2,7 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-[![npm](https://img.shields.io/npm/v/@shifu-hu/dsh-cloudflare-mcp.svg)](https://www.npmjs.com/package/@shifu-hu/dsh-cloudflare-mcp)
+[![npm](https://img.shields.io/npm/v/dsh-cf-mcp.svg)](https://www.npmjs.com/package/dsh-cf-mcp)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Ready-to-use configs for connecting the **Cloudflare official API MCP** (Code Mode, `https://mcp.cloudflare.com/mcp`) to your AI agent client. Once connected, the agent gets 3 tools: `docs` (doc search), `search` (OpenAPI spec search), `execute` (JS sandbox runner).
@@ -36,10 +36,10 @@ Least-privilege alternative: a **User API Token** (dashboard → My Profile → 
 
 ### dsh
 
-Published on npm: **[@shifu-hu/dsh-cloudflare-mcp](https://www.npmjs.com/package/@shifu-hu/dsh-cloudflare-mcp)**
+Published on npm: **[dsh-cf-mcp](https://www.npmjs.com/package/dsh-cf-mcp)**
 
 ```bash
-plugin_manager install_bundle @shifu-hu/dsh-cloudflare-mcp
+plugin_manager install_bundle dsh-cf-mcp
 ```
 
 One install gives you all three pieces:
@@ -55,14 +55,14 @@ One install gives you all three pieces:
 3. If you later upgrade `@deepseek-ai/dsh-mcp-client`, its file is replaced — the patch is re-applied on the next plugin load, or run it by hand:
 
 ```bash
-node node_modules/@shifu-hu/dsh-cloudflare-mcp/apply-schema-fix.mjs
+node node_modules/dsh-cf-mcp/apply-schema-fix.mjs
 ```
 
 Both automatic steps can be turned off in the bundle config:
 
 ```yaml
 - id: mcp-cloudflare
-  name: '@shifu-hu/dsh-cloudflare-mcp'
+  name: 'dsh-cf-mcp'
   config:
     patchClient: false    # don't touch dsh-mcp-client
     installSkill: false   # don't write the skill file
