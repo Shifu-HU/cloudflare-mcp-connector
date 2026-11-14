@@ -2,6 +2,9 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
+[![npm](https://img.shields.io/npm/v/@shifu-hu/dsh-cloudflare-mcp.svg)](https://www.npmjs.com/package/@shifu-hu/dsh-cloudflare-mcp)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Ready-to-use configs for connecting the **Cloudflare official API MCP** (Code Mode, `https://mcp.cloudflare.com/mcp`) to your AI agent client. Once connected, the agent gets 3 tools: `docs` (doc search), `search` (OpenAPI spec search), `execute` (JS sandbox runner).
 
 | Directory | Client | What's inside |
@@ -33,9 +36,21 @@ Least-privilege alternative: a **User API Token** (dashboard → My Profile → 
 
 ### dsh
 
-1. Set the environment variable **before launching dsh**: `CLOUDFLARE_API_TOKEN` (read via a `!!js` tag in `dsh/cordis.patch.yml` — **no secret on disk**);
-2. **Run the patch once**: `node dsh/apply-schema-fix.mjs`. Without it, dsh shows "MCP connected" but registers **zero tools, with no visible error** (root cause in [`dsh/README.md`](dsh/README.md)). The patch strips a JSON-Schema keyword dsh doesn't support before registration; it is idempotent and backs up first;
-3. Restart dsh.
+Published on npm: **[@shifu-hu/dsh-cloudflare-mcp](https://www.npmjs.com/package/@shifu-hu/dsh-cloudflare-mcp)**
+
+```bash
+plugin_manager install_bundle @shifu-hu/dsh-cloudflare-mcp
+```
+
+1. Set the environment variable **before launching dsh**: `CLOUDFLARE_API_TOKEN` (read via a `!!js` tag — **no secret on disk**);
+2. **Restart dsh.** The plugin applies the schema patch automatically on load, so the three tools register. Without that patch, dsh would show "MCP connected" but register **zero tools, with no visible error** (root cause in [`dsh/README.md`](dsh/README.md));
+3. If you later upgrade `@deepseek-ai/dsh-mcp-client`, the patch is overwritten — it is re-applied the next time the plugin loads, or run it by hand:
+
+```bash
+node node_modules/@shifu-hu/dsh-cloudflare-mcp/apply-schema-fix.mjs
+```
+
+> The patch rewrites one call site inside `dsh-mcp-client` (backing up to `index.js.bak-schema-fix` first). It strips a JSON-Schema keyword (`$schema`) the harness rejects, is idempotent, and affects every MCP server you connect, not just Cloudflare.
 
 ### Any other agent
 

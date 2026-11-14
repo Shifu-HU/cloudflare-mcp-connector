@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Cloudflare MCP",
+    "description": "Connects the Cloudflare API MCP (Code Mode) and patches tool registration so its docs, search and execute tools actually appear."
+  }
+}

@@ -4,6 +4,9 @@
 
 接入 **Cloudflare 官方 API MCP**（Code Mode，`https://mcp.cloudflare.com/mcp`）的即用配置。接入后 agent 获得同样 3 个工具：`docs`（文档检索）、`search`（OpenAPI spec 搜索）、`execute`（JS 沙箱执行器）。
 
+[![npm](https://img.shields.io/npm/v/@shifu-hu/dsh-cloudflare-mcp.svg)](https://www.npmjs.com/package/@shifu-hu/dsh-cloudflare-mcp)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 | 目录 | 客户端 | 内容 |
 |---|---|---|
 | [`workbuddy/`](workbuddy/) | **WorkBuddy** | `mcp.json` —— 复制、贴令牌、完成 |
@@ -33,9 +36,21 @@
 
 ### dsh
 
-1. **启动 dsh 前**设好环境变量：`CLOUDFLARE_API_TOKEN`（由 `dsh/cordis.patch.yml` 里的 `!!js` 标签读取，**令牌不落盘**）；
-2. **打一次补丁**：`node dsh/apply-schema-fix.mjs`。不打的话，dsh 显示「MCP 连接成功」但**注册 0 个工具且不报任何错**（真因见 [`dsh/README.md`](dsh/README.md)）。补丁在注册前剥掉 dsh 不支持的一个 JSON-Schema 关键字；幂等，先备份；
-3. 重启 dsh。
+已发布到 npm：**[@shifu-hu/dsh-cloudflare-mcp](https://www.npmjs.com/package/@shifu-hu/dsh-cloudflare-mcp)**
+
+```bash
+plugin_manager install_bundle @shifu-hu/dsh-cloudflare-mcp
+```
+
+1. **启动 dsh 前**设好环境变量：`CLOUDFLARE_API_TOKEN`（由 `!!js` 标签读取，**令牌不落盘**）；
+2. **重启 dsh**。插件加载时会自动打 schema 补丁，三个工具即可注册。不打补丁的话，dsh 会显示「MCP 连接成功」但**注册 0 个工具且不报任何错**（真因见 [`dsh/README.md`](dsh/README.md)）；
+3. 若之后升级了 `@deepseek-ai/dsh-mcp-client`，补丁会被覆盖——插件下次加载会自动重打，也可手动执行：
+
+```bash
+node node_modules/@shifu-hu/dsh-cloudflare-mcp/apply-schema-fix.mjs
+```
+
+> 补丁只改写 `dsh-mcp-client` 里的一个调用点（改写前备份为 `index.js.bak-schema-fix`），剥离 harness 不接受的 JSON-Schema 关键字（`$schema`）。幂等，且对你接的**所有** MCP server 都生效，不只 Cloudflare。
 
 ### 其他 agent
 

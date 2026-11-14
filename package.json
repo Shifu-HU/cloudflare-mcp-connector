@@ -1,0 +1,38 @@
+{
+  "name": "@shifu-hu/dsh-cloudflare-mcp",
+  "version": "1.0.0",
+  "description": "Cloudflare official API MCP (Code Mode) for the agent runtime, with the JSON-Schema sanitizer that makes its tools register.",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "author": "Shifu-HU <Shifu-HU@users.noreply.github.com>",
+  "homepage": "https://github.com/Shifu-HU/cloudflare-mcp-connector",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shifu-HU/cloudflare-mcp-connector.git"
+  },
+  "keywords": ["dsh", "deepseek-harness", "mcp", "cloudflare", "plugin"],
+  "bin": {
+    "dsh-cf-schema-fix": "./apply-schema-fix.mjs"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./apply-schema-fix": "./apply-schema-fix.mjs",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "lib/index.js",
+    "apply-schema-fix.mjs",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "CREDITS.md",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" }
+  }
+}

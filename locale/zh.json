@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Cloudflare MCP",
+    "description": "接入 Cloudflare API MCP（Code Mode），并修补工具注册，让 docs / search / execute 三个工具真正出现。"
+  }
+}
